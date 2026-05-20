@@ -14,7 +14,7 @@ export default function Home() {
           <input
             type="file"
             accept=".pdf"
-            className="mb-4 block"
+            className= "mb-4 block"
           />
 
           <button className="bg-white text-black px-4 py-2 rounded-xl font-medium">
