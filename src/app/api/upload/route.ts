@@ -1,4 +1,5 @@
 import pdf from "pdf-parse/lib/pdf-parse.js";
+import { UploadResponse } from '@/types/upload-reponse';
 
 export async function POST(request: Request) {
   try {
@@ -17,12 +18,14 @@ export async function POST(request: Request) {
 
     const parsedPdf = await pdf(buffer);
 
-    return Response.json({
+    const responseBody : UploadResponse = {
       success: true,
       fileName: file.name,
       pages: parsedPdf.numpages,
       textPreview: parsedPdf.text,
-    });
+    }
+
+    return Response.json(responseBody);
   } catch (error) {
     console.error("UPLOAD_ERROR:", error);
 

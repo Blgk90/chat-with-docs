@@ -1,13 +1,15 @@
 'use client';
 
+import { ChatRequestBody } from '@/types/chat';
+import { UploadResponse } from '@/types/upload-reponse';
 import { useRef, useState } from 'react';
 
 export default function UploadBox() {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-	const [uploadResult, setUploadResult] = useState<any>(null);
+	const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
 
-	const [isUploading, setIsUploading] = useState(false);
+	const [isUploading, setIsUploading] = useState<boolean>(false);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,20 +37,31 @@ export default function UploadBox() {
 		const formData = new FormData();
 		formData.append('file', selectedFile);
 
-		const response = await fetch('/api/upload', {
+		// const response = await fetch('/api/upload', {
+		// 	method: 'POST',
+		// 	body: formData
+		// });
+
+		const chatRequestBody : ChatRequestBody = {
+			question: "What is this document about ?",
+			documentText: "This is a sample document text that would be extracted from the uploaded PDF. It contains information about the content of the PDF, including its main topics, key points, and any relevant details that can help answer questions about the document."
+		}
+
+		const response = await fetch('/api/chat', {
 			method: 'POST',
-			body: formData
+			headers: {
+				"Content-Type": "application/json",
+			  },
+			  body: JSON.stringify(chatRequestBody),
 		});
 
 		if (response) {
-			const data = await response.json();
+			const data : UploadResponse = await response.json();
 
 			setUploadResult(data);
 		}
 
     setIsUploading(false);
-    console.log(isUploading);
-    
 	}
 
 	return (
