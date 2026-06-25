@@ -14,8 +14,7 @@ const openai = new OpenAI({
 
 
 export async function POST(request: Request) {
-    
-    console.log(request);
+
   try {
     const body: ChatRequestBody = await request.json();
 

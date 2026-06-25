@@ -9,13 +9,19 @@ export default function UploadBox() {
 
 	const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
 
+	const [question, setQuestion] = useState('');
+
+	const [answer, setAnswer] = useState('');
+
+	const [isAsking, setIsAsking] = useState(false);
+
 	const [isUploading, setIsUploading] = useState<boolean>(false);
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const preWrapStyleAttr = {
-    whiteSpace: 'pre-wrap',
-  }
+	const preWrapStyleAttr = {
+		whiteSpace: 'pre-wrap'
+	};
 
 	function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const file = event.target.files?.[0];
@@ -37,35 +43,50 @@ export default function UploadBox() {
 		const formData = new FormData();
 		formData.append('file', selectedFile);
 
-		// const response = await fetch('/api/upload', {
-		// 	method: 'POST',
-		// 	body: formData
-		// });
-
-		const chatRequestBody : ChatRequestBody = {
-			question: "What is this document about ?",
-			documentText: "This is a sample document text that would be extracted from the uploaded PDF. It contains information about the content of the PDF, including its main topics, key points, and any relevant details that can help answer questions about the document."
-		}
-
-		const response = await fetch('/api/chat', {
+		const response = await fetch('/api/upload', {
 			method: 'POST',
-			headers: {
-				"Content-Type": "application/json",
-			  },
-			  body: JSON.stringify(chatRequestBody),
+			body: formData
 		});
 
 		if (response) {
-			const data : UploadResponse = await response.json();
-
+			const data: UploadResponse = await response.json();
 			setUploadResult(data);
 		}
 
-    setIsUploading(false);
+		setIsUploading(false);
+	}
+
+	async function handleAskQuestion() {
+		if (!uploadResult?.success || !question.trim()) return;
+
+		try {
+			setIsAsking(true);
+			setAnswer('');
+
+			const response = await fetch('/api/chat', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					question,
+					documentText: uploadResult.text
+				})
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				setAnswer(data.answer);
+			} else {
+				setAnswer(data.message);
+			}
+		} finally {
+			setIsAsking(false);
+		}
 	}
 
 	return (
-
 		<div className="border border-gray-800 rounded-2xl p-8 bg-gray-900">
 			<input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileChange} className="mb-4 block hidden" />
 
@@ -77,6 +98,8 @@ export default function UploadBox() {
 					File type : {selectedFile.type}
 					<br />
 					File size : {(selectedFile.size / 1024 / 1024).toFixed(2)} Mb
+					<br />
+					<span className={uploadResult ? 'text-green-700' : 'text-yellow-700'}>File State : {uploadResult ? 'Ready' : 'Not Uploaded'}</span>
 				</p>
 			)}
 
@@ -93,7 +116,7 @@ export default function UploadBox() {
 				</button>
 
 				{selectedFile && (
-					<button className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium flex " onClick={handleUpload} disabled={isUploading}>
+					<button className="bg-sky-500 text-black px-4 py-2 rounded-xl font-medium flex disabled:cursor-not-allowed disabled:opacity-50" onClick={handleUpload} disabled={isUploading || uploadResult?.success}>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
@@ -112,11 +135,36 @@ export default function UploadBox() {
 				)}
 			</div>
 
-			{uploadResult && (
-				<div className="border border-gray-800 rounded-2xl p-8">
-					<pre className="text-sm text-gray-400 mb-4 text-center " style={preWrapStyleAttr}>{uploadResult.textPreview}</pre>
+			{uploadResult?.success && (
+				<div className="mt-8 rounded-2xl border border-gray-800 bg-gray-900 p-6">
+					<h2 className="mb-2 text-xl font-semibold">Ask something about this document</h2>
+
+					<p className="mb-4 text-sm text-gray-400">The AI will answer using the extracted text from your PDF.</p>
+
+					<textarea
+						value={question}
+						onChange={(event) => setQuestion(event.target.value)}
+						placeholder="Example: What is this document about?"
+						className="min-h-32 w-full resize-none rounded-xl border border-gray-700 bg-black p-4 text-white outline-none focus:border-gray-500"
+					/>
+
+					<button
+						onClick={handleAskQuestion}
+						disabled={isAsking || !question.trim()}
+						className="mt-4 rounded-xl bg-white px-4 py-2 font-medium text-black disabled:cursor-not-allowed disabled:opacity-50">
+						{isAsking ? 'Thinking...' : 'Ask'}
+					</button>
+
+					{answer && (
+						<div className="mt-6 rounded-xl bg-black p-4">
+							<h3 className="mb-2 font-semibold text-gray-300">Answer</h3>
+
+							<p className="whitespace-pre-wrap text-gray-100">{answer}</p>
+						</div>
+					)}
 				</div>
 			)}
+
 		</div>
 	);
 }

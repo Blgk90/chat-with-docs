@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       success: true,
       fileName: file.name,
       pages: parsedPdf.numpages,
-      textPreview: parsedPdf.text,
+      text: parsedPdf.text,
     }
 
     return Response.json(responseBody);
